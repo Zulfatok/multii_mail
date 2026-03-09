@@ -1,0 +1,22 @@
+name = "multi-maail-portal"
+main = "src/index.js"
+compatibility_date = "2025-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+# Primary domain (default untuk display)
+DOMAIN = "sambatan.works"
+# Semua domain yang didukung (pisahkan dengan koma, tambah domain baru di sini)
+ALLOWED_DOMAINS = "sambatan.works,latayasu.me,daburaso.app"
+APP_BASE_URL = "https://portal.sambatan.works"
+DEFAULT_ALIAS_LIMIT = "3"
+SESSION_TTL_SECONDS = "1209600"
+RESET_TTL_SECONDS = "3600"
+LOG_LEVEL = "info"
+# Monitor API key: set via `wrangler secret put MONITOR_API_KEY`
+# Usage: curl -H "X-API-Key: YOUR_KEY" https://portal.mazayaa.me/api/monitor/stats
+
+[[d1_databases]]
+binding = "DB"
+database_name = "maail_portal"
+database_id = "25c7cc8f-2a19-438e-a02c-64fda2829ef8"
