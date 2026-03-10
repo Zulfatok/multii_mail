@@ -436,7 +436,7 @@ export function appPage(domains) {
                   '<div class="mailMeta">'+esc(fmtDate(m.date || m.created_at || ''))+'</div>'+
                   (m.snippet ? '<div class="mailSnippet">'+esc(m.snippet)+'</div>' : '')+
                   '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'+
-                    '<button class="btn-primary" onclick="openEmail(\''+m.id+'\');">View</button>'+
+                    '<button class="btn-primary" onclick="openEmail(\\''+m.id+'\\')">View</button>'+
                   '</div>'+
                 '</div>'+
               '</div>'+
