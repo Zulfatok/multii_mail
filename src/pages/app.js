@@ -3,19 +3,19 @@
 import { esc, headerHtml, pageTemplate, CLIENT_HELPERS } from "./template.js";
 
 export function appPage(domains) {
-    const domainOptions = domains.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  const domainOptions = domains.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
 
-    return pageTemplate(
-        "Inbox",
-        `
+  return pageTemplate(
+    "Inbox",
+    `
     ${headerHtml({
-            badge: "Inbox",
-            subtitle: "Kelola mail & baca inbox",
-            rightHtml: `
+      badge: "Inbox",
+      subtitle: "Kelola mail & baca inbox",
+      rightHtml: `
         <a href="/admin" id="adminLink" class="pill" style="display:none">Admin</a>
         <button class="danger" onclick="logout()">Logout</button>
       `,
-        })}
+    })}
 
     <div class="card">
       <div class="row">
@@ -37,6 +37,18 @@ export function appPage(domains) {
           <div id="aliasMsg" class="muted" style="margin-top:8px"></div>
         </div>
       </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <b>🔍 Cari Semua Pesan</b>
+        <span class="muted">Cari di semua email</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:10px">
+        <input id="globalSearchInput" placeholder="Ketik subject, pengirim, atau isi pesan..." onkeydown="if(event.key==='Enter')globalSearch()" />
+        <button class="btn-primary" onclick="globalSearch()">Cari Semua</button>
+      </div>
+      <div id="globalSearchResults" style="margin-top:10px"></div>
     </div>
 
     <div class="card">
@@ -386,6 +398,64 @@ export function appPage(domains) {
         location.href='/login';
       }
 
+      async function globalSearch(){
+        var input = document.getElementById('globalSearchInput');
+        var q = (input && input.value || '').trim();
+        var box = document.getElementById('globalSearchResults');
+        if(!q){
+          if(box) box.innerHTML='';
+          return;
+        }
+        if(box) box.innerHTML='<div class="muted" style="padding:12px;text-align:center">⏳ Mencari...</div>';
+        try{
+          var j = await api('/api/emails/search?q='+encodeURIComponent(q));
+          if(!j.ok){
+            box.innerHTML='<div class="muted" style="padding:12px;text-align:center">❌ '+(j.error||'Gagal mencari')+'</div>';
+            return;
+          }
+          if(!j.emails || j.emails.length===0){
+            box.innerHTML='<div class="muted" style="padding:24px;text-align:center;background:rgba(255,255,255,0.03);border-radius:8px;border:1px dashed rgba(148,163,184,0.3)">'+
+              '🔍 Tidak ditemukan hasil untuk "'+esc(q)+'"'+
+            '</div>';
+            return;
+          }
+          var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'+
+            '<span class="muted">Ditemukan <b>'+j.emails.length+'</b> hasil untuk "'+esc(q)+'"</span>'+
+            '<button class="btn-ghost" onclick="clearGlobalSearch()">✕ Tutup</button>'+
+          '</div>';
+          for(var k=0; k<j.emails.length; k++){
+            var m = j.emails[k];
+            html += '<div class="mailItem">'+
+              '<div style="display:flex;gap:12px;align-items:flex-start">'+
+                '<div style="flex:1;min-width:0">'+
+                  '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">'+
+                    '<span class="pill" style="font-size:11px">'+esc(m.address||'')+'</span>'+
+                  '</div>'+
+                  '<div class="mailSubject">'+esc(m.subject||'(no subject)')+'</div>'+
+                  '<div class="mailMeta">From: '+esc(m.from_addr||'')+'</div>'+
+                  '<div class="mailMeta">'+esc(fmtDate(m.date || m.created_at || ''))+'</div>'+
+                  (m.snippet ? '<div class="mailSnippet">'+esc(m.snippet)+'</div>' : '')+
+                  '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'+
+                    '<button class="btn-primary" onclick="openEmail(\''+m.id+'\');">View</button>'+
+                  '</div>'+
+                '</div>'+
+              '</div>'+
+            '</div>';
+          }
+          box.innerHTML = html;
+        }catch(e){
+          console.error('Global search error:', e);
+          if(box) box.innerHTML='<div class="muted" style="padding:12px;text-align:center">❌ Error: '+esc(String(e))+'</div>';
+        }
+      }
+
+      function clearGlobalSearch(){
+        var input = document.getElementById('globalSearchInput');
+        if(input) input.value='';
+        var box = document.getElementById('globalSearchResults');
+        if(box) box.innerHTML='';
+      }
+
       window.createAlias = createAlias;
       window.selectAlias = selectAlias;
       window.delAlias = delAlias;
@@ -396,6 +466,8 @@ export function appPage(domains) {
       window.deleteSelectedEmails = deleteSelectedEmails;
       window.logout = logout;
       window.loadEmails = loadEmails;
+      window.globalSearch = globalSearch;
+      window.clearGlobalSearch = clearGlobalSearch;
 
       (async function(){
         try{
@@ -407,5 +479,5 @@ export function appPage(domains) {
       })();
     </script>
     `
-    );
+  );
 }
