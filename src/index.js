@@ -656,6 +656,38 @@ export default {
           return json({ ok: true });
         }
 
+        // Global search across all emails
+        if (path === "/api/emails/search" && request.method === "GET") {
+          const q = (url.searchParams.get("q") || "").trim();
+          if (!q) return badRequest("q (search query) required");
+
+          const emailsDom = await emailsHasDomain(env);
+          const allowedDomains = getAllowedDomains(env);
+          const fallbackDomain = allowedDomains[0] || env.DOMAIN || "";
+
+          const pattern = `%${q}%`;
+          const domainCol = emailsDom ? "e.domain," : "";
+
+          const rows = await env.DB.prepare(
+            `SELECT e.id, e.local_part, ${domainCol} e.from_addr, e.to_addr,
+                    e.subject, e.date, e.created_at,
+                    substr(COALESCE(e.text,''), 1, 180) as snippet
+             FROM emails e
+             WHERE e.user_id = ?
+               AND (e.subject LIKE ? OR e.from_addr LIKE ? OR e.text LIKE ?)
+             ORDER BY e.created_at DESC
+             LIMIT 50`
+          ).bind(me.id, pattern, pattern, pattern).all();
+
+          const emails = (rows.results || []).map(e => ({
+            ...e,
+            domain: e.domain || fallbackDomain,
+            address: e.local_part + "@" + (e.domain || fallbackDomain),
+          }));
+
+          return json({ ok: true, emails, query: q });
+        }
+
         // Emails (with search support)
         if (path === "/api/emails" && request.method === "GET") {
           const alias = (url.searchParams.get("alias") || "").trim().toLowerCase();
